@@ -225,7 +225,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
         <label for="t-dims"><input type="checkbox" id="t-dims" checked> Dimensions</label>
         <label for="t-callouts"><input type="checkbox" id="t-callouts" checked> Callouts</label>
         <label for="t-temp"><input type="checkbox" id="t-temp" checked> Temporary works</label>
-        <label for="t-figure"><input type="checkbox" id="t-figure" checked> Person (1.75 m)</label>
+        <label for="t-figure"><input type="checkbox" id="t-figure" checked> People and dog</label>
       </div>
       <p class="note">Turn off temporary works to see the site as it is today.</p>
     </section>
@@ -713,6 +713,79 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
     scene.add(person);
   })();
 
+  // Pedestrian walking a dog, both in hard hats
+  const walker = new THREE.Group();
+  (function () {
+    const lin = (hex) => new THREE.Color(hex).convertSRGBToLinear();
+    const mk = (geo, col, rough) => { const m = new THREE.Mesh(geo, std({ color: lin(col), roughness: rough == null ? 0.75 : rough })); m.castShadow = true; return m; };
+    const hatCol = 0xf2c230;
+    function hardHat(r, y, x) {
+      const g = new THREE.Group();
+      const dome = mk(new THREE.SphereGeometry(r, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), hatCol, 0.4);
+      dome.scale.set(1.08, 0.92, 1); g.add(dome);
+      const brim = mk(new THREE.CylinderGeometry(r * 1.25, r * 1.25, r * 0.1, 24), hatCol, 0.4);
+      brim.position.set(r * 0.18, 0, 0); g.add(brim);
+      const ridge = mk(new THREE.BoxGeometry(r * 1.7, r * 0.16, r * 0.22), hatCol, 0.4);
+      ridge.position.y = r * 0.86; g.add(ridge);
+      g.position.set(x, y, 0);
+      return g;
+    }
+    // person (local +x = walking direction)
+    const pp = new THREE.Group(); pp.position.z = 0.15;
+    const skin = 0xc99a76, shirt = 0x2f7f8a, pants = 0x2b3340, shoe = 0x1d1f22;
+    [[0.09, 0.28], [-0.09, -0.25]].forEach(([z, a]) => {
+      const leg = new THREE.Group(); leg.position.set(0, 0.88, z); leg.rotation.z = a;
+      const m = mk(new THREE.CylinderGeometry(0.065, 0.055, 0.86, 10), pants); m.position.y = -0.43; leg.add(m);
+      const f = mk(new THREE.BoxGeometry(0.25, 0.07, 0.1), shoe); f.position.set(0.05, -0.85, 0); leg.add(f);
+      pp.add(leg);
+    });
+    const torso = mk(new THREE.CapsuleGeometry(0.16, 0.42, 6, 12), shirt); torso.position.y = 1.17; torso.scale.set(0.72, 1, 1); pp.add(torso);
+    [[0.22, -0.3], [-0.22, 0.6]].forEach(([z, a]) => {
+      const arm = new THREE.Group(); arm.position.set(0, 1.42, z); arm.rotation.z = a;
+      const m = mk(new THREE.CapsuleGeometry(0.045, 0.46, 4, 8), shirt); m.position.y = -0.27; arm.add(m);
+      const h = mk(new THREE.SphereGeometry(0.045, 10, 8), skin); h.position.y = -0.56; arm.add(h);
+      pp.add(arm);
+    });
+    const neck = mk(new THREE.CylinderGeometry(0.045, 0.05, 0.08, 10), skin); neck.position.y = 1.5; pp.add(neck);
+    const head = mk(new THREE.SphereGeometry(0.105, 18, 14), skin); head.position.y = 1.6; pp.add(head);
+    pp.add(hardHat(0.122, 1.635, 0.005));
+    walker.add(pp);
+
+    // dog
+    const dg = new THREE.Group(); dg.position.set(0.95, 0, -0.25);
+    const coat = 0xb9864f, muzzle = 0xd9b88f;
+    const body = mk(new THREE.CapsuleGeometry(0.13, 0.42, 6, 12), coat); body.rotation.z = Math.PI / 2; body.position.y = 0.42; dg.add(body);
+    [[0.2, 0.08, 0.14], [0.2, -0.08, -0.12], [-0.2, 0.08, -0.12], [-0.2, -0.08, 0.14]].forEach(([x, z, a]) => {
+      const leg = new THREE.Group(); leg.position.set(x, 0.36, z); leg.rotation.z = a;
+      const m = mk(new THREE.CylinderGeometry(0.042, 0.036, 0.36, 8), coat); m.position.y = -0.18; leg.add(m);
+      dg.add(leg);
+    });
+    dg.add(cylBetween(V(0.24, 0.47, 0), V(0.33, 0.62, 0), 0.06, std({ color: lin(coat) })));
+    const dh = mk(new THREE.SphereGeometry(0.1, 16, 12), coat); dh.position.set(0.37, 0.66, 0); dh.scale.set(1.1, 0.95, 0.9); dg.add(dh);
+    const snout = mk(new THREE.BoxGeometry(0.15, 0.08, 0.09), muzzle); snout.position.set(0.48, 0.625, 0); dg.add(snout);
+    const nose = mk(new THREE.SphereGeometry(0.022, 8, 6), 0x1a1a1a, 0.3); nose.position.set(0.555, 0.645, 0); dg.add(nose);
+    for (const s of [1, -1]) {
+      const ear = mk(new THREE.BoxGeometry(0.06, 0.11, 0.02), 0x8f6235); ear.position.set(0.35, 0.65, s * 0.1); ear.rotation.x = s * 0.35; dg.add(ear);
+      const eye = mk(new THREE.SphereGeometry(0.014, 8, 6), 0x111111, 0.2); eye.position.set(0.45, 0.69, s * 0.045); dg.add(eye);
+    }
+    const tail = cylBetween(V(-0.26, 0.5, 0), V(-0.42, 0.7, 0), 0.025, std({ color: lin(coat) })); tail.castShadow = true; dg.add(tail);
+    const neckDir = V(0.09, 0.15, 0).normalize();
+    const collar = mk(new THREE.TorusGeometry(0.066, 0.016, 8, 20), 0xc0392b, 0.5); collar.position.set(0.29, 0.555, 0);
+    collar.quaternion.setFromUnitVectors(V(0, 0, 1), neckDir); dg.add(collar);
+    dg.add(hardHat(0.085, 0.735, 0.37));
+    walker.add(dg);
+
+    // lead from hand to collar
+    const hand = V(0.33, 0.95, -0.07), clip = V(1.24, 0.57, -0.25);
+    const curve = new THREE.QuadraticBezierCurve3(hand, V(0.8, 0.5, -0.16), clip);
+    const lead = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.008, 6), std({ color: lin(0xc0392b), roughness: 0.5 }));
+    lead.castShadow = true; walker.add(lead);
+
+    walker.rotation.y = Math.PI; // walking toward the left boundary
+    walker.position.set(9.6, S.pathY, 2.15);
+    scene.add(walker);
+  })();
+
   // ---------- Dimensions ----------
   const dimsSite = new THREE.Group(), dimsTemp = new THREE.Group();
   scene.add(dimsSite, dimsTemp);
@@ -781,6 +854,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
     dimsSite.visible = state.dims && !state.walking;
     dimsTemp.visible = state.dims && state.temp && !state.walking;
     person.visible = state.figure && !state.walking;
+    walker.visible = state.figure && !state.walking;
   }
   [["t-dims", "dims"], ["t-callouts", "callouts"], ["t-temp", "temp"], ["t-figure", "figure"]].forEach(([id, key]) => {
     const el = document.getElementById(id);
