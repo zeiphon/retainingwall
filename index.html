@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Interactive 3D model of the Guildford Rd retaining wall replacement: fenced work zone, 1.5 m pedestrian route, matting, signs and pole clearance.">
+<title>Guildford Rd Wall Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: drawing-sheet side panel (title block, views, layers, schedule) + full-bleed 3D stage. */
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --surface-2: #e9edf0;
+  --ink: #1b2228;
+  --muted: #5a646c;
+  --line: #d6dce1;
+  --work: #993c1d;
+  --ped: #185fa5;
+  --mat: #333b42;
+  --sign: #e6a51a;
+  --focus: #185fa5;
+  /* Labels sit on the daylight 3D scene, which looks the same in both themes */
+  --label-bg: rgba(255, 255, 255, 0.94);
+  --label-ink: #17212a;
+  --label-line: #17212a;
+  --plan-work: #993c1d;
+  --plan-ped: #185fa5;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #13181c; --surface: #1b2227; --surface-2: #232c32; --ink: #e5e9ec; --muted: #9aa5ad;
+    --line: #2d363d; --work: #e27b55; --ped: #62a8ea; --mat: #9aa5ad; --sign: #f0b63a; --focus: #62a8ea;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #13181c; --surface: #1b2227; --surface-2: #232c32; --ink: #e5e9ec; --muted: #9aa5ad;
+  --line: #2d363d; --work: #e27b55; --ped: #62a8ea; --mat: #9aa5ad; --sign: #f0b63a; --focus: #62a8ea;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { height: 100%; box-sizing: border-box; }
+body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--font-body); }
+
+.app { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: 100%; }
+.panel {
+  overflow-y: auto; border-right: 1px solid var(--line); background: var(--bg);
+  padding-block: 22px 28px;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: 20px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.titleblock { display: flex; flex-direction: column; gap: 8px; }
+.eyebrow { font: 600 11px/1.2 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font: 600 25px/1.12 var(--font-display); letter-spacing: -0.005em; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 34em; }
+.sheet { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: var(--surface); }
+.sheet div { padding: 7px 9px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 1px; }
+.sheet div:last-child { border-right: 0; }
+.sheet span { font: 600 10px/1.2 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.sheet b { font: 500 13px/1.3 var(--font-mono); font-variant-numeric: tabular-nums; }
+
+section { display: flex; flex-direction: column; gap: 10px; }
+h2 { margin: 0; font: 600 12px/1.2 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.views { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.views button {
+  text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 8px 10px; border-radius: 3px; cursor: pointer; display: flex; flex-direction: column; gap: 1px;
+  font: 500 13px/1.25 var(--font-display); letter-spacing: 0.01em;
+}
+.views button small { font: 400 11.5px/1.3 var(--font-body); color: var(--muted); letter-spacing: 0; }
+.views button:hover { border-color: var(--muted); }
+.views button[aria-pressed="true"] { border-color: var(--ink); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--ink); }
+
+.walkbtn {
+  display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
+  border: 0; border-radius: 3px; background: var(--ink); color: var(--bg); cursor: pointer;
+  padding: 11px 14px; font: 600 14px/1 var(--font-display); letter-spacing: 0.02em;
+}
+.walkbtn svg { width: 15px; height: 15px; }
+.walkbtn:hover { opacity: 0.9; }
+.note { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; font-size: 13.5px; }
+.toggles input { width: 16px; height: 16px; accent-color: var(--ped); margin: 0; }
+
+.sched { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; border-top: 1px solid var(--line); }
+.sched dt, .sched dd { margin: 0; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.sched dt { display: flex; align-items: center; gap: 8px; font-size: 13px; min-width: 0; }
+.sched dd { font: 500 13px/1.5 var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; padding-left: 10px; }
+.sw { width: 10px; height: 10px; flex: none; border: 1px solid var(--line); background: var(--surface-2); }
+.sw.work { background: var(--work); border-color: var(--work); }
+.sw.ped { background: var(--ped); border-color: var(--ped); }
+.sw.mat { background: repeating-linear-gradient(45deg, var(--ped) 0 2px, transparent 2px 4px); border-color: var(--ped); }
+.sw.sign { background: var(--sign); border-color: var(--sign); transform: rotate(45deg) scale(0.85); }
+.sw.site { background: var(--muted); border-color: var(--muted); }
+
+.legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; }
+.legend div { display: flex; align-items: center; gap: 8px; }
+.foot { margin-top: auto; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+
+/* Stage */
+.stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #cbdcec; }
+#c { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+#labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+.callout { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; will-change: transform; --c: var(--label-line); }
+.callout .tag {
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  background: var(--label-bg); color: var(--label-ink); padding: 3px 8px 3px 6px;
+  font: 500 12.5px/1.25 var(--font-display); letter-spacing: 0.01em;
+  box-shadow: 0 1px 2px rgba(20, 30, 40, 0.25); border-radius: 2px;
+}
+.callout .tag::before { content: ""; width: 8px; height: 8px; background: var(--c); flex: none; }
+.callout .stem { width: 1px; height: 20px; background: var(--c); }
+.callout .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1.5px #fff; margin-bottom: -3.5px; }
+.callout.work { --c: var(--plan-work); }
+.callout.ped { --c: var(--plan-ped); }
+.callout.sign { --c: #b8790a; }
+.callout.road .tag { background: rgba(30, 34, 38, 0.82); color: #f2f2ee; }
+.callout.road .tag::before, .callout.road .stem, .callout.road .dot { display: none; }
+
+.dim {
+  position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform;
+  font: 500 11.5px/1.2 var(--font-mono); font-variant-numeric: tabular-nums;
+  background: var(--label-bg); color: var(--label-ink); padding: 2px 5px; border-radius: 2px;
+  border: 1px solid rgba(23, 33, 42, 0.35);
+}
+.dim.work { color: var(--plan-work); border-color: var(--plan-work); }
+.dim.ped { color: var(--plan-ped); border-color: var(--plan-ped); }
+
+.hint {
+  position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  font: 500 11.5px/1.2 var(--font-display); letter-spacing: 0.04em; color: #24303a;
+  background: rgba(255, 255, 255, 0.78); padding: 5px 8px; border-radius: 2px; pointer-events: none;
+}
+.viewname {
+  position: absolute; top: 12px; right: calc(12px + env(safe-area-inset-right, 0px));
+  font: 600 11px/1.2 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase;
+  color: #24303a; background: rgba(255, 255, 255, 0.78); padding: 5px 8px; border-radius: 2px; pointer-events: none;
+}
+
+.walkbar {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(560px, calc(100% - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  background: rgba(20, 26, 31, 0.88); color: #eef1f3; border-radius: 4px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.walkbar .cap { font: 500 14px/1.35 var(--font-display); letter-spacing: 0.01em; min-height: 2.7em; display: flex; align-items: flex-end; }
+.walkbar .row { display: flex; align-items: center; gap: 10px; }
+.walkbar button {
+  border: 1px solid rgba(255, 255, 255, 0.3); background: transparent; color: #eef1f3; border-radius: 3px;
+  padding: 6px 10px; font: 600 12.5px/1 var(--font-display); letter-spacing: 0.03em; cursor: pointer; flex: none;
+}
+.walkbar button:hover { background: rgba(255, 255, 255, 0.1); }
+.walkbar input[type="range"] { flex: 1; min-width: 0; accent-color: #7fb6ec; }
+.walkbar .pos { font: 500 12px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: #b9c3ca; flex: none; width: 5.5ch; text-align: right; }
+
+.fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #24303a; font-size: 15px; }
+
+button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.walkbar button:focus-visible, .walkbar input:focus-visible { outline-color: #7fb6ec; }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 56%) minmax(0, 1fr); }
+  .stage { order: -1; }
+  .panel { border-right: 0; border-top: 1px solid var(--line); padding-block: 18px 24px; padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); gap: 18px; }
+  h1 { font-size: 22px; }
+  .hint { display: none; }
+  .callout .tag { font-size: 11.5px; padding: 2px 6px 2px 5px; }
+  .dim { font-size: 10.5px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel" aria-label="Model controls">
+    <div class="titleblock">
+      <span class="eyebrow">Temporary works · 3D site model</span>
+      <h1>Guildford Rd retaining wall replacement</h1>
+      <p class="lede">The work zone is fenced 1.4 m out from the wall. Pedestrians keep a 1.5 m designated route on the outer footpath and ground matting across the verge.</p>
+      <div class="sheet" aria-label="Site summary">
+        <div><span>Frontage</span><b>14.0 m</b></div>
+        <div><span>Units</span><b>metres</b></div>
+        <div><span>Fence</span><b>1.8 m mesh</b></div>
+      </div>
+    </div>
+
+    <section aria-labelledby="h-views">
+      <h2 id="h-views">Views</h2>
+      <div class="views" id="views">
+        <button type="button" id="v-overview" data-view="overview" aria-pressed="true">Overview<small>Aerial, road side</small></button>
+        <button type="button" id="v-plan" data-view="plan" aria-pressed="false">Plan<small>Top down</small></button>
+        <button type="button" id="v-photo" data-view="photo" aria-pressed="false">Photo match<small>Your site photo angle</small></button>
+        <button type="button" id="v-approach" data-view="approach" aria-pressed="false">Left approach<small>Eye level, 1.6 m</small></button>
+        <button type="button" id="v-pole" data-view="pole" aria-pressed="false">Pole clearance<small>Close-up, road side</small></button>
+        <button type="button" id="v-section" data-view="section" aria-pressed="false">End section<small>Wall to road profile</small></button>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-walk">
+      <h2 id="h-walk">Pedestrian walk-through</h2>
+      <button type="button" class="walkbtn" id="walkStart">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>
+        Walk the pedestrian route
+      </button>
+      <p class="note">An eye-level walk along the footpath, through the designated area and past the pole, at about 1.2 m/s.</p>
+    </section>
+
+    <section aria-labelledby="h-show">
+      <h2 id="h-show">Show</h2>
+      <div class="toggles">
+        <label for="t-dims"><input type="checkbox" id="t-dims" checked> Dimensions</label>
+        <label for="t-callouts"><input type="checkbox" id="t-callouts" checked> Callouts</label>
+        <label for="t-temp"><input type="checkbox" id="t-temp" checked> Temporary works</label>
+        <label for="t-figure"><input type="checkbox" id="t-figure" checked> Person (1.75 m)</label>
+      </div>
+      <p class="note">Turn off temporary works to see the site as it is today.</p>
+    </section>
+
+    <section aria-labelledby="h-sched">
+      <h2 id="h-sched">Key dimensions</h2>
+      <dl class="sched">
+        <dt><i class="sw work"></i>Work zone depth from wall</dt><dd>1.4 m</dd>
+        <dt><i class="sw work"></i>Fence taper past each boundary</dt><dd>1.0 m</dd>
+        <dt><i class="sw work"></i>Temporary fence height</dt><dd>1.8 m</dd>
+        <dt><i class="sw ped"></i>Designated pedestrian area</dt><dd>1.5 m</dd>
+        <dt><i class="sw ped"></i>&nbsp;&nbsp;Footpath share</dt><dd>1.0 m</dd>
+        <dt><i class="sw mat"></i>&nbsp;&nbsp;Ground matting on verge</dt><dd>0.5 m</dd>
+        <dt><i class="sw site"></i>Existing footpath width</dt><dd>2.0 m</dd>
+        <dt><i class="sw site"></i>Strip, wall to footpath</dt><dd>0.4 m</dd>
+        <dt><i class="sw site"></i>Grass verge</dt><dd>1.2 m</dd>
+        <dt><i class="sw site"></i>Utility pole to footpath edge</dt><dd>0.6 m</dd>
+        <dt><i class="sw site"></i>Retaining wall height</dt><dd>≈0.65 m</dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="h-legend">
+      <h2 id="h-legend">Legend</h2>
+      <div class="legend">
+        <div><i class="sw work"></i>Work zone</div>
+        <div><i class="sw ped"></i>Pedestrian area</div>
+        <div><i class="sw mat"></i>Ground matting</div>
+        <div><i class="sw sign"></i>Pedestrian sign</div>
+      </div>
+    </section>
+
+    <div class="foot">
+      <span>Built from the 14 m frontage site plan and a site photo. Layout dimensions follow the plan; existing features (fences, pit, trees) are approximate.</span>
+      <span>Drag to orbit · scroll or pinch to zoom · right-drag or two-finger drag to pan.</span>
+    </div>
+  </aside>
+
+  <main class="stage" id="stage">
+    <canvas id="c" tabindex="0" aria-label="3D model of the Guildford Rd frontage works"></canvas>
+    <div id="labels" aria-hidden="true"></div>
+    <div class="viewname" id="viewname">Overview</div>
+    <div class="hint" id="hint">Drag to orbit · Scroll to zoom · Right-drag to pan</div>
+    <div class="walkbar" id="walkbar" hidden>
+      <div class="cap" id="walkCap" aria-live="polite">Approaching the works.</div>
+      <div class="row">
+        <button type="button" id="walkPlay">Pause</button>
+        <input type="range" id="walkRange" min="0" max="1000" value="0" aria-label="Walk position">
+        <span class="pos" id="walkPos">0.0 m</span>
+        <button type="button" id="walkExit">Exit</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+  const stage = document.getElementById("stage");
+  const canvas = document.getElementById("c");
+  const labelLayer = document.getElementById("labels");
+
+  if (!window.THREE || !THREE.OrbitControls) {
+    stage.insertAdjacentHTML("beforeend", '<div class="fallback">The 3D library did not load. Check your connection and reload the page.</div>');
+    return;
+  }
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: false });
+  } catch (e) {
+    stage.insertAdjacentHTML("beforeend", '<div class="fallback">This browser could not start WebGL, so the 3D model cannot be shown.</div>');
+    return;
+  }
+
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+  // ---------- Site geometry (metres). x along frontage, z from wall face toward road, y up ----------
+  const S = {
+    wallH: 0.65, wallT: 0.23, capH: 0.11,
+    strip: [0, 0.4], path: [0.4, 2.4], verge: [2.4, 3.6], road: [3.6, 15],
+    front: [0, 14], fenceZ: 1.4, pedZ: [1.4, 2.9], matZ: [2.4, 2.9],
+    pole: { x: 13.5, z: 3.15, r: 0.15 },
+    propY: 0.6, pathY: 0.03, groundY: 0.01, roadY: -0.03,
+    ext: [-60, 80],
+  };
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+  const scene = new THREE.Scene();
+  const sky = new THREE.Color("#cbdcec");
+  scene.background = sky;
+  scene.fog = new THREE.Fog(sky, 45, 140);
+
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 400);
+  camera.position.set(19, 9, 13);
+
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.09;
+  controls.maxPolarAngle = Math.PI / 2 - 0.03;
+  controls.minDistance = 1.2;
+  controls.maxDistance = 70;
+  controls.target.set(7, 0.4, 1.6);
+
+  // ---------- Lights ----------
+  scene.add(new THREE.HemisphereLight(0xe3edf6, 0x8a7d60, 0.75));
+  const sun = new THREE.DirectionalLight(0xfff3df, 1.55);
+  sun.position.set(16, 20, 14);
+  sun.target.position.set(7, 0, 1.5);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 16, bottom: -16, near: 1, far: 70 });
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.02;
+  scene.add(sun, sun.target);
+
+  // ---------- Procedural textures ----------
+  function rng(seed) { return function () { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function makeTex(w, h, draw, opts) {
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d"); draw(g, w, h);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.encoding = THREE.sRGBEncoding;
+    t.anisotropy = maxAniso;
+    return t;
+  }
+  function speckle(g, w, h, r, n, cols, smin, smax) {
+    for (let i = 0; i < n; i++) {
+      g.fillStyle = cols[Math.floor(r() * cols.length)];
+      const s = smin + r() * (smax - smin);
+      g.fillRect(r() * w, r() * h, s, s);
+    }
+  }
+  function rep(tex, rx, ry) { const t = tex.clone(); t.needsUpdate = true; t.repeat.set(rx, ry); return t; }
+
+  const texGrass = makeTex(256, 256, (g, w, h) => {
+    const r = rng(11);
+    g.fillStyle = "#a39f6c"; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 26; i++) { // patches of sand and green
+      const x = r() * w, y = r() * h, rad = 10 + r() * 34;
+      const grd = g.createRadialGradient(x, y, 0, x, y, rad);
+      const col = r() < 0.5 ? "rgba(201,186,140,0.55)" : "rgba(118,138,72,0.5)";
+      grd.addColorStop(0, col); grd.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = grd; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+      for (const ox of [-w, w]) { g.save(); g.translate(ox, 0); g.fillRect(x - rad, y - rad, rad * 2, rad * 2); g.restore(); }
+    }
+    speckle(g, w, h, r, 2600, ["#8d8a58", "#b4ae7a", "#7c8a4c", "#c6b98f"], 1, 2.5);
+    speckle(g, w, h, r, 260, ["#8b3d2b", "#9c4a33", "#6e3424"], 1, 3); // red leaf litter seen in the photo
+  });
+  const texConcrete = makeTex(512, 512, (g, w, h) => {
+    const r = rng(5);
+    g.fillStyle = "#cbcac4"; g.fillRect(0, 0, w, h);
+    speckle(g, w, h, r, 9000, ["#c1c0ba", "#d4d3cd", "#bab9b2", "#d9d8d2"], 1, 2);
+    g.fillStyle = "#8f8e88"; g.fillRect(0, 0, 3, h); // transverse joint
+    g.fillStyle = "rgba(255,255,255,0.25)"; g.fillRect(3, 0, 1, h);
+  });
+  const texAsphalt = makeTex(256, 256, (g, w, h) => {
+    const r = rng(7);
+    g.fillStyle = "#56595c"; g.fillRect(0, 0, w, h);
+    speckle(g, w, h, r, 5200, ["#4b4e51", "#64676a", "#6f7174", "#45484b"], 1, 2);
+  });
+  const texBrick = makeTex(480, 344, (g, w, h) => {
+    const r = rng(3);
+    g.fillStyle = "#b8aa96"; g.fillRect(0, 0, w, h);
+    const bw = 230, bh = 76, m = 10, cols = ["#a4472e", "#93402a", "#b0553a", "#8a3a26", "#a84f35", "#9b4630"];
+    for (let row = 0; row < 4; row++) {
+      const y = row * (bh + m) + m / 2, off = row % 2 ? -(bw + m) / 2 : 0;
+      for (let x = off; x < w; x += bw + m) {
+        g.fillStyle = cols[Math.floor(r() * cols.length)];
+        g.fillRect(x + m / 2, y, bw, bh);
+        if (x + bw + m > w) { g.fillRect(x + m / 2 - w, y, bw, bh); }
+      }
+    }
+    speckle(g, w, h, r, 3000, ["rgba(60,25,15,0.25)", "rgba(255,210,180,0.15)"], 1, 3);
+  });
+  const texCap = makeTex(344, 110, (g, w, h) => {
+    const r = rng(9);
+    g.fillStyle = "#b8aa96"; g.fillRect(0, 0, w, h);
+    const cols = ["#a4472e", "#93402a", "#b0553a", "#8a3a26"];
+    for (let x = 0; x < w; x += 86) { g.fillStyle = cols[Math.floor(r() * cols.length)]; g.fillRect(x + 5, 4, 76, h - 8); }
+    speckle(g, w, h, r, 900, ["rgba(60,25,15,0.25)"], 1, 3);
+  });
+  const texRib = makeTex(152, 32, (g, w) => { // corrugated steel fence sheet, two ribs per tile
+    const grd = g.createLinearGradient(0, 0, w, 0);
+    [["#5b745d", 0], ["#6f8a70", 0.18], ["#506751", 0.32], ["#5d765f", 0.5], ["#6f8a70", 0.68], ["#506751", 0.82], ["#5b745d", 1]].forEach(([c, s]) => grd.addColorStop(s, c));
+    g.fillStyle = grd; g.fillRect(0, 0, w, 32);
+  });
+  const texMesh = makeTex(256, 256, (g, w, h) => { // temporary fence mesh, ~60 x 150 mm
+    g.clearRect(0, 0, w, h);
+    g.strokeStyle = "#c3cad0"; g.lineWidth = 2.4;
+    for (let i = 0; i <= 10; i++) { const x = (i * w) / 10; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    for (let i = 0; i <= 4; i++) { const y = (i * h) / 4; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+  });
+  const texChain = makeTex(128, 128, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    g.strokeStyle = "#b9b29f"; g.lineWidth = 2.2;
+    for (let i = -2; i <= 2; i++) {
+      g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64 + 128, 128); g.stroke();
+      g.beginPath(); g.moveTo(i * 64 + 128, 0); g.lineTo(i * 64, 128); g.stroke();
+    }
+  });
+  const texMat = makeTex(128, 128, (g, w, h) => { // HDPE ground protection mat tread
+    g.fillStyle = "#2c3237"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#454e56";
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
+      const cx = x * 32 + (y % 2 ? 16 : 0) + 8, cy = y * 32 + 16;
+      g.beginPath(); g.ellipse(cx % w, cy, 9, 4, Math.PI / 4, 0, Math.PI * 2); g.fill();
+    }
+  });
+  const texPit = makeTex(128, 128, (g, w, h) => {
+    const r = rng(21);
+    g.fillStyle = "#8e9092"; g.fillRect(0, 0, w, h);
+    speckle(g, w, h, r, 1600, ["#7b7d80", "#a2a4a6", "#6e7073"], 1, 3);
+    g.strokeStyle = "#5d5f62"; g.lineWidth = 6; g.strokeRect(3, 3, w - 6, h - 6);
+  });
+  const texSign = makeTex(512, 768, (g, w, h) => {
+    g.fillStyle = "#f4c21b"; g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#111"; g.lineWidth = 22; g.strokeRect(26, 26, w - 52, h - 52);
+    // pedestrian pictogram
+    g.fillStyle = "#111"; g.strokeStyle = "#111"; g.lineCap = "round"; g.lineWidth = 34;
+    const cx = w / 2, top = 120;
+    g.beginPath(); g.arc(cx + 6, top + 40, 36, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.moveTo(cx, top + 100); g.lineTo(cx - 10, top + 230); g.stroke();
+    g.beginPath(); g.moveTo(cx - 10, top + 230); g.lineTo(cx - 70, top + 340); g.stroke();
+    g.beginPath(); g.moveTo(cx - 10, top + 230); g.lineTo(cx + 50, top + 340); g.stroke();
+    g.beginPath(); g.moveTo(cx - 2, top + 130); g.lineTo(cx - 70, top + 210); g.stroke();
+    g.beginPath(); g.moveTo(cx - 2, top + 130); g.lineTo(cx + 66, top + 190); g.stroke();
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.font = "700 64px 'Arial Narrow', Arial, sans-serif";
+    g.fillText("FOOTPATH", cx, 560);
+    g.fillText("NARROWED", cx, 640);
+  });
+
+  // ---------- Materials ----------
+  const std = (o) => new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.9, metalness: 0 }, o));
+  const M = {
+    grass: (rx, ry) => std({ map: rep(texGrass, rx, ry) }),
+    concrete: (rx, ry) => std({ map: rep(texConcrete, rx, ry), roughness: 0.85 }),
+    asphalt: (rx, ry) => std({ map: rep(texAsphalt, rx, ry), roughness: 0.95 }),
+    sand: std({ color: 0xc8b996 }),
+    maroon: std({ color: 0x7a2f26, roughness: 0.6, metalness: 0.2 }),
+    galv: std({ color: 0xaeb5ba, roughness: 0.45, metalness: 0.7 }),
+    cream: std({ color: 0xcfc4aa, roughness: 0.6, metalness: 0.2 }),
+    timber: std({ color: 0x8a7458, roughness: 0.95 }),
+    poleGreen: std({ color: 0x2c473a, roughness: 0.7 }),
+    footBlock: std({ color: 0x2f3438, roughness: 0.8 }),
+    clamp: std({ color: 0x9aa2a8, roughness: 0.4, metalness: 0.8 }),
+    signBack: std({ color: 0x3a3f44, roughness: 0.6 }),
+    leaf: std({ color: 0x55703f, roughness: 1, flatShading: true }),
+    leaf2: std({ color: 0x46613a, roughness: 1, flatShading: true }),
+    trunk: std({ color: 0x6b5a45 }),
+    person: std({ color: 0x5f6f80, roughness: 0.7 }),
+    line: new THREE.MeshBasicMaterial({ color: 0xf2f2ec }),
+  };
+
+  function box(w, h, d, mat, x, y, z, opts) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z);
+    if (!opts || opts.cast !== false) m.castShadow = true;
+    m.receiveShadow = true;
+    return m;
+  }
+  function ground(x0, x1, z0, z1, y, mat) {
+    const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
+    g.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(g, mat);
+    m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2);
+    m.receiveShadow = true;
+    return m;
+  }
+  function cylBetween(a, b, r, mat, seg) {
+    const d = b.clone().sub(a), L = d.length();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, seg || 8), mat);
+    m.position.copy(a).add(b).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
+    return m;
+  }
+
+  const site = new THREE.Group();
+  const temp = new THREE.Group();
+  scene.add(site, temp);
+
+  const [E0, E1] = S.ext, EW = E1 - E0, EC = (E0 + E1) / 2;
+
+  // ---------- Ground layers ----------
+  site.add(ground(E0, E1, -45, -S.wallT, S.propY, M.grass(EW / 3, 15)));          // raised property ground
+  site.add(ground(E0, E1, S.strip[0], S.strip[1], S.groundY, M.grass(EW / 2, 0.2))); // strip between wall and path
+  site.add(ground(E0, E1, S.verge[0], S.verge[1], S.groundY, M.grass(EW / 2, 0.6)));
+  site.add(ground(E0 - 40, E1 + 40, S.road[0] + 0.12, S.road[1], S.roadY, M.asphalt(EW / 2 + 40, 6)));
+  site.add(ground(E0 - 40, E1 + 40, S.road[1], 90, 0, M.grass(60, 30)));
+  site.add(box(EW + 80, 0.06, 0.14, M.sand, EC, -0.01, S.road[0] + 0.05, { cast: false })); // sandy road edge
+  const path = box(EW, 0.1, S.path[1] - S.path[0], M.concrete(EW / 1.8, 1), EC, S.pathY - 0.05, (S.path[0] + S.path[1]) / 2, { cast: false });
+  site.add(path);
+
+  // lane lines
+  for (const lz of [7.1, 10.6]) {
+    for (let x = E0 - 30; x < E1 + 30; x += 12) {
+      const l = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.11).rotateX(-Math.PI / 2), M.line);
+      l.position.set(x, S.roadY + 0.004, lz); site.add(l);
+    }
+  }
+
+  // ---------- Retaining wall (frontage full colour, neighbours toned down) ----------
+  function wall(x0, x1, tone) {
+    const L = x1 - x0, bodyH = S.wallH - S.capH;
+    const body = box(L, bodyH, S.wallT, std({ map: rep(texBrick, L / 0.48, bodyH / 0.344), color: tone }), (x0 + x1) / 2, bodyH / 2, -S.wallT / 2);
+    const cap = box(L, S.capH, S.wallT + 0.04, std({ map: rep(texCap, L / 0.344, 1), color: tone }), (x0 + x1) / 2, bodyH + S.capH / 2, -S.wallT / 2);
+    site.add(body, cap);
+  }
+  wall(S.front[0], S.front[1], 0xffffff);
+  wall(E0, S.front[0], 0xc4bbb2);
+  wall(S.front[1], E1, 0xc4bbb2);
+  for (const bx of S.front) site.add(box(0.025, S.wallH + 0.02, 0.02, std({ color: 0x1b2228 }), bx, S.wallH / 2, 0.012, { cast: false }));
+
+  // ---------- Existing property fences (from photo) ----------
+  function sheetFence(x0, x1) {
+    const L = x1 - x0, z = -0.5, y0 = S.propY, h = 1.8;
+    site.add(box(L, h, 0.03, std({ map: rep(texRib, L / 0.152, 1), roughness: 0.55, metalness: 0.25 }), (x0 + x1) / 2, y0 + h / 2, z));
+    site.add(box(L, 0.07, 0.06, M.maroon, (x0 + x1) / 2, y0 + h + 0.02, z));
+    const n = Math.floor(L / 2.4);
+    const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, h + 0.05, 0.06), M.maroon, n + 1);
+    posts.castShadow = true;
+    const mtx = new THREE.Matrix4();
+    for (let i = 0; i <= n; i++) { mtx.makeTranslation(x0 + i * (L / n), y0 + (h + 0.05) / 2, z + 0.04); posts.setMatrixAt(i, mtx); }
+    site.add(posts);
+  }
+  sheetFence(E0, 11);
+  sheetFence(18, E1);
+  (function chainLink(x0, x1) {
+    const L = x1 - x0, z = -0.18, y0 = S.propY, h = 1.2;
+    const mat = std({ map: rep(texChain, L / 0.1, h / 0.1), transparent: true, alphaTest: 0.05, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.6, depthWrite: false });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(L, h), mat);
+    mesh.position.set((x0 + x1) / 2, y0 + h / 2, z); site.add(mesh);
+    site.add(cylBetween(V(x0, y0 + h, z), V(x1, y0 + h, z), 0.022, M.cream));
+    for (let x = x0; x <= x1 + 0.01; x += L / 3) site.add(cylBetween(V(x, y0, z), V(x, y0 + h + 0.05, z), 0.03, M.cream));
+    // cream steel gate frame with scroll-top rail, as in the photo
+    const gx = 15.4;
+    site.add(cylBetween(V(gx, y0, z + 0.02), V(gx, y0 + 1.15, z + 0.02), 0.025, M.cream));
+    site.add(cylBetween(V(gx + 0.9, y0, z + 0.02), V(gx + 0.9, y0 + 1.15, z + 0.02), 0.025, M.cream));
+    site.add(cylBetween(V(gx, y0 + 0.9, z + 0.02), V(gx + 0.9, y0 + 0.9, z + 0.02), 0.02, M.cream));
+    for (let i = 0; i < 5; i++) {
+      const t = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.012, 6, 16), M.cream);
+      t.position.set(gx + 0.13 + i * 0.16, y0 + 1.0, z + 0.02); site.add(t);
+    }
+  })(11, 18);
+
+  // trees for context
+  function tree(x, z, s, mat) {
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18 * s, 0.26 * s, 3.2 * s, 7), M.trunk);
+    trunk.position.y = 1.6 * s; trunk.castShadow = true; g.add(trunk);
+    const r = rng(Math.round(x * 13 + z * 7));
+    for (let i = 0; i < 5; i++) {
+      const c = new THREE.Mesh(new THREE.IcosahedronGeometry((1.4 + r() * 0.9) * s, 1), i % 2 ? M.leaf : M.leaf2);
+      c.position.set((r() - 0.5) * 2.6 * s, (3.6 + r() * 1.6) * s, (r() - 0.5) * 2.2 * s);
+      c.castShadow = true; g.add(c);
+    }
+    g.position.set(x, z < 0 ? S.propY : 0, z);
+    site.add(g);
+  }
+  tree(2.5, -4.5, 1.0); tree(19, -6, 1.15); tree(-9, -5, 0.9); tree(6, 24, 1.8); tree(-16, 30, 1.5); tree(28, 26, 1.6);
+
+  // service pit lid on the footpath (photo)
+  const pit = box(0.5, 0.012, 0.42, std({ map: texPit, roughness: 0.5, metalness: 0.4 }), 12.4, S.pathY + 0.006, 0.66, { cast: false });
+  site.add(pit);
+
+  // ---------- Utility pole ----------
+  const P = S.pole;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(P.r * 0.8, P.r, 10.5, 16), M.timber);
+  pole.position.set(P.x, 5.25 - 0.1, P.z); pole.castShadow = true; site.add(pole);
+  const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(P.r + 0.004, P.r + 0.006, 2.6, 16), M.poleGreen);
+  sleeve.position.set(P.x, 1.3, P.z); sleeve.castShadow = true; site.add(sleeve);
+  site.add(box(0.12, 3.3, 0.06, M.galv, P.x, 1.6, P.z + P.r + 0.03)); // galvanised reinforcing stake on road side
+  site.add(box(0.11, 0.11, 2.4, M.timber, P.x, 9.6, P.z));
+  const wireMat = new THREE.LineBasicMaterial({ color: 0x2a2a2a });
+  for (const wz of [-0.95, 0, 0.95]) {
+    for (const end of [-70, 95]) {
+      const pts = [];
+      for (let i = 0; i <= 24; i++) {
+        const t = i / 24, x = P.x + (end - P.x) * t;
+        pts.push(V(x, 9.75 - Math.sin(Math.PI * t) * 1.2, P.z + wz));
+      }
+      site.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), wireMat));
+    }
+  }
+
+  // ---------- Temporary works ----------
+  // Work zone ground overlay (trapezoid from the plan)
+  (function () {
+    const shp = new THREE.Shape();
+    [[-1, 0], [0, S.fenceZ], [14, S.fenceZ], [15, 0]].forEach(([x, z], i) => (i ? shp.lineTo(x, -z) : shp.moveTo(x, -z)));
+    const g = new THREE.ShapeGeometry(shp); g.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xe0805c, transparent: true, opacity: 0.38, depthWrite: false }));
+    m.position.y = S.pathY + 0.012; m.renderOrder = 2; temp.add(m);
+  })();
+
+  // Ground matting on the verge
+  const mat = box(14, 0.018, S.matZ[1] - S.matZ[0], std({ map: rep(texMat, 14 / 0.25, 0.5 / 0.25), roughness: 0.85 }), 7, S.groundY + 0.009, (S.matZ[0] + S.matZ[1]) / 2, { cast: false });
+  temp.add(mat);
+
+  // Designated pedestrian area: tint + dashed outline
+  (function () {
+    const w = 14, d = S.pedZ[1] - S.pedZ[0], cz = (S.pedZ[0] + S.pedZ[1]) / 2, y = S.pathY + 0.016;
+    const tint = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x4f97dd, transparent: true, opacity: 0.22, depthWrite: false }));
+    tint.position.set(7, y, cz); tint.renderOrder = 2; temp.add(tint);
+    const dashMat = new THREE.MeshBasicMaterial({ color: 0x185fa5 });
+    const edges = [[V(0, y, S.pedZ[0]), V(14, y, S.pedZ[0])], [V(14, y, S.pedZ[0]), V(14, y, S.pedZ[1])], [V(14, y, S.pedZ[1]), V(0, y, S.pedZ[1])], [V(0, y, S.pedZ[1]), V(0, y, S.pedZ[0])]];
+    for (const [a, b] of edges) {
+      const L = a.distanceTo(b), dir = b.clone().sub(a).normalize();
+      for (let s = 0; s < L; s += 0.5) {
+        const e = Math.min(s + 0.3, L);
+        const p0 = a.clone().addScaledVector(dir, s), p1 = a.clone().addScaledVector(dir, e);
+        const seg = new THREE.Mesh(new THREE.BoxGeometry(p0.distanceTo(p1), 0.004, 0.04), dashMat);
+        seg.position.copy(p0).add(p1).multiplyScalar(0.5); seg.position.y += 0.004;
+        seg.rotation.y = Math.atan2(-dir.z, dir.x); temp.add(seg);
+      }
+    }
+  })();
+
+  // 1.8 m temporary mesh fence panels on feet
+  const fencePts = [V(-1, 0, 0.18), V(0, 0, S.fenceZ), V(14, 0, S.fenceZ), V(15, 0, 0.18)];
+  const joints = [];
+  (function () {
+    const H = 1.8, base = S.pathY;
+    const meshMat = std({ map: texMesh, transparent: true, alphaTest: 0.02, side: THREE.DoubleSide, metalness: 0.6, roughness: 0.45, depthWrite: false });
+    for (let s = 0; s < fencePts.length - 1; s++) {
+      const a = fencePts[s], b = fencePts[s + 1], L = a.distanceTo(b);
+      const n = Math.max(1, Math.round(L / 2.4)), pw = L / n;
+      const dir = b.clone().sub(a).normalize(), yaw = Math.atan2(-dir.z, dir.x);
+      for (let i = 0; i < n; i++) {
+        const p0 = a.clone().addScaledVector(dir, i * pw), p1 = a.clone().addScaledVector(dir, (i + 1) * pw);
+        const g = new THREE.Group();
+        g.position.copy(p0).add(p1).multiplyScalar(0.5); g.position.y = base; g.rotation.y = yaw;
+        const hw = pw / 2 - 0.03;
+        for (const sx of [-hw, hw]) { const u = cylBetween(V(sx, 0.08, 0), V(sx, H, 0), 0.019, M.galv); u.castShadow = true; g.add(u); }
+        for (const yy of [0.12, H - 0.02]) { const r = cylBetween(V(-hw, yy, 0), V(hw, yy, 0), 0.016, M.galv); r.castShadow = true; g.add(r); }
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(hw * 2, H - 0.14), meshMat.clone());
+        m.material.map = rep(texMesh, (hw * 2) / 0.6, (H - 0.14) / 0.6);
+        m.position.y = 0.12 + (H - 0.14) / 2; g.add(m);
+        temp.add(g);
+        if (!joints.length) joints.push({ p: p0, yaw });
+        joints.push({ p: p1, yaw });
+      }
+    }
+    // feet and clamps at each joint
+    for (const j of joints) {
+      const f = box(0.2, 0.12, 0.62, M.footBlock, j.p.x, base + 0.06, j.p.z);
+      f.rotation.y = j.yaw; temp.add(f);
+      for (const cy of [0.45, 1.45]) { const c = box(0.09, 0.07, 0.07, M.clamp, j.p.x, base + cy, j.p.z); c.rotation.y = j.yaw; temp.add(c); }
+    }
+  })();
+
+  // A-frame pedestrian signs at each approach (plan positions)
+  function aSign(x, z, yaw) {
+    const g = new THREE.Group();
+    const faceMats = (front) => [M.signBack, M.signBack, M.signBack, M.signBack, front ? std({ map: texSign, roughness: 0.5 }) : M.signBack, M.signBack];
+    const p1 = box(0.6, 0.9, 0.02, faceMats(true), 0, 0, 0); p1.position.set(0, 0.5, 0.11); p1.rotation.x = -0.24;
+    const p2 = box(0.6, 0.9, 0.02, faceMats(true), 0, 0, 0); p2.position.set(0, 0.5, -0.11); p2.rotation.x = 0.24; p2.rotation.y = Math.PI;
+    p2.rotation.order = "YXZ"; p2.rotation.set(-0.24, Math.PI, 0);
+    g.add(p1, p2);
+    g.position.set(x, S.groundY, z); g.rotation.y = yaw;
+    temp.add(g);
+  }
+  aSign(-1.25, 0.25, -Math.PI / 2);
+  aSign(15.25, 0.25, Math.PI / 2);
+
+  // Person for scale
+  const person = new THREE.Group();
+  (function () {
+    for (const lx of [-0.09, 0.09]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.86, 10), M.person); l.position.set(0, 0.43, lx); l.castShadow = true; person.add(l); }
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.42, 6, 12), M.person); torso.position.y = 1.17; torso.scale.set(0.75, 1, 1); torso.castShadow = true; person.add(torso);
+    for (const az of [-0.23, 0.23]) { const a = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.52, 4, 8), M.person); a.position.set(0, 1.12, az); a.castShadow = true; person.add(a); }
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), M.person); head.position.y = 1.64; head.castShadow = true; person.add(head);
+    person.position.set(5.6, S.pathY, 2.15);
+    scene.add(person);
+  })();
+
+  // ---------- Dimensions ----------
+  const dimsSite = new THREE.Group(), dimsTemp = new THREE.Group();
+  scene.add(dimsSite, dimsTemp);
+  const dimMats = { ink: new THREE.MeshBasicMaterial({ color: 0x17212a }), work: new THREE.MeshBasicMaterial({ color: 0x993c1d }), ped: new THREE.MeshBasicMaterial({ color: 0x185fa5 }) };
+  const labels = [];
+  function addLabel(kind, layer, p, html, cls, maxD, pri) {
+    const el = document.createElement("div");
+    el.className = (kind === "dim" ? "dim" : "callout") + (cls ? " " + cls : "");
+    el.innerHTML = kind === "dim" ? html : '<span class="tag">' + html + '</span><span class="stem"></span><span class="dot"></span>';
+    labelLayer.appendChild(el);
+    labels.push({ el, p, kind, layer, maxD: maxD || 60, shown: true, pri: pri == null ? 50 : pri, w: 0, h: 0 });
+  }
+  function dim(a, b, text, opts) {
+    const o = Object.assign({ color: "ink", tick: V(1, 0, 0), layer: "site", lift: V(0, 0.12, 0), ext: null, pri: 60 }, opts);
+    const grp = o.layer === "temp" ? dimsTemp : dimsSite;
+    const m = dimMats[o.color];
+    const dir = b.clone().sub(a).normalize(), L = a.distanceTo(b), ah = Math.min(0.1, L * 0.22);
+    grp.add(cylBetween(a.clone().addScaledVector(dir, ah), b.clone().addScaledVector(dir, -ah), 0.009, m, 6));
+    for (const [p, d] of [[a, dir.clone().negate()], [b, dir]]) {
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.03, ah, 10), m);
+      cone.position.copy(p).addScaledVector(d, -ah / 2);
+      cone.quaternion.setFromUnitVectors(V(0, 1, 0), d);
+      grp.add(cone);
+      grp.add(cylBetween(p.clone().addScaledVector(o.tick, -0.09), p.clone().addScaledVector(o.tick, 0.09), 0.006, m, 5));
+    }
+    if (o.ext) for (const [p0, p1] of o.ext) grp.add(cylBetween(p0, p1, 0.006, m, 5));
+    addLabel("dim", o.layer, a.clone().add(b).multiplyScalar(0.5).add(o.lift), text, o.color === "ink" ? "" : o.color, o.maxD, o.pri);
+  }
+  const yG = 0.07;
+  // existing site
+  dim(V(0, 0.0, 4.15), V(14, 0.0, 4.15), "14.0 m frontage", { pri: 25, tick: V(0, 0, 1), lift: V(0, 0.18, 0), ext: [[V(0, 0, 3.62), V(0, 0, 4.3)], [V(14, 0, 3.62), V(14, 0, 4.3)]] });
+  dim(V(-3, yG, S.path[0]), V(-3, yG, S.path[1]), "2.0 m footpath");
+  dim(V(-3, yG, S.verge[0]), V(-3, yG, S.verge[1]), "1.2 m verge");
+  dim(V(-3, yG, 0.02), V(-3, yG, S.strip[1]), "0.4", { lift: V(0, 0.12, 0), pri: 80 });
+  dim(V(8, 0.0, 0.1), V(8, S.wallH, 0.1), "≈0.65 m wall", { tick: V(1, 0, 0), lift: V(0.55, 0, 0) });
+  dim(V(P.x, 0.09, S.path[1]), V(P.x, 0.09, P.z - P.r), "0.6 m", { lift: V(-0.35, 0.1, 0) });
+  // temporary works
+  dim(V(2.5, yG + 0.02, 0.02), V(2.5, yG + 0.02, S.fenceZ), "1.4 m work zone", { color: "work", layer: "temp", pri: 20 });
+  dim(V(2.5, yG + 0.02, S.pedZ[0]), V(2.5, yG + 0.02, S.pedZ[1]), "1.5 m pedestrian area", { color: "ped", layer: "temp", pri: 20 });
+  dim(V(10.3, yG + 0.02, S.pedZ[0]), V(10.3, yG + 0.02, S.path[1]), "1.0", { color: "ped", layer: "temp", pri: 75 });
+  dim(V(10.3, yG + 0.02, S.matZ[0]), V(10.3, yG + 0.02, S.matZ[1]), "0.5", { color: "ped", layer: "temp", lift: V(0, 0.12, 0.05), pri: 75 });
+  dim(V(14, yG, 0.08), V(15, yG, 0.08), "1.0 m", { color: "work", layer: "temp", tick: V(0, 0, 1), pri: 78 });
+  dim(V(-1, yG, 0.08), V(0, yG, 0.08), "1.0 m", { color: "work", layer: "temp", tick: V(0, 0, 1), pri: 78 });
+  dim(V(14 * 2 / 6, S.pathY, S.fenceZ + 0.12), V(14 * 2 / 6, 1.8, S.fenceZ + 0.12), "1.8 m fence", { color: "work", layer: "temp", lift: V(0.55, 0, 0), tick: V(1, 0, 0) });
+
+  // ---------- Callouts ----------
+  addLabel("callout", "site", V(6.2, S.wallH + 0.02, -0.08), "Retaining wall to be replaced", "", 60, 10);
+  addLabel("callout", "site", V(0, S.wallH + 0.05, -0.1), "Boundary", "", 22, 70);
+  addLabel("callout", "site", V(14, S.wallH + 0.05, -0.1), "Boundary", "", 22, 70);
+  addLabel("callout", "site", V(P.x, 2.9, P.z), "Utility pole", "", 60, 30);
+  addLabel("callout", "site", V(12.4, S.pathY + 0.02, 0.66), "Existing service pit", "", 18, 72);
+  addLabel("callout", "site", V(7, S.roadY, 8.6), "Guildford Rd", "road", 60, 40);
+  addLabel("callout", "temp", V(9.2, 1.82, S.fenceZ), "1.8 m mesh fence panels", "work", 60, 12);
+  addLabel("callout", "temp", V(9.6, S.pathY + 0.02, 0.75), "Work zone", "work", 60, 15);
+  addLabel("callout", "temp", V(7.4, S.pathY + 0.03, 1.9), "Designated pedestrian area", "ped", 60, 11);
+  addLabel("callout", "temp", V(4.6, S.groundY + 0.03, 2.65), "Ground matting on verge", "ped", 60, 14);
+  addLabel("callout", "temp", V(-1.25, 1.02, 0.25), "Pedestrian sign", "sign", 26, 35);
+  addLabel("callout", "temp", V(15.25, 1.02, 0.25), "Pedestrian sign", "sign", 26, 35);
+
+  labels.sort((a, b) => a.pri - b.pri);
+
+  // ---------- State and toggles ----------
+  const state = { dims: true, callouts: true, temp: true, figure: true, walking: false };
+  function applyVisibility() {
+    temp.visible = state.temp;
+    dimsSite.visible = state.dims && !state.walking;
+    dimsTemp.visible = state.dims && state.temp && !state.walking;
+    person.visible = state.figure && !state.walking;
+  }
+  [["t-dims", "dims"], ["t-callouts", "callouts"], ["t-temp", "temp"], ["t-figure", "figure"]].forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    el.addEventListener("change", () => { state[key] = el.checked; applyVisibility(); });
+  });
+
+  // ---------- Views ----------
+  const viewNames = { overview: "Overview", plan: "Plan", photo: "Photo match", approach: "Left approach", pole: "Pole clearance", section: "End section" };
+  function aspect() { return camera.aspect || 1.5; }
+  const views = {
+    overview() {
+      const k = Math.min(2, Math.max(1, 1.35 / aspect()));
+      const t = V(7, 0.3, 1.8), off = V(7.5, 7.2, 10.5).multiplyScalar(k);
+      return { p: t.clone().add(off), t, f: 42 };
+    },
+    plan() {
+      const f = 40, tan = Math.tan(THREE.MathUtils.degToRad(f / 2));
+      const h = Math.max(8 / tan, 9.8 / (tan * aspect()));
+      return { p: V(7, h, 1.9001), t: V(7, 0, 1.9), f };
+    },
+    photo() { return { p: V(17.6, 1.2, 1.65), t: V(6, 0.75, 1.3), f: 62 }; },
+    approach() { return { p: V(-7.5, 1.6, 1.5), t: V(3, 0.9, 1.95), f: 55 }; },
+    pole() { return { p: V(16.8, 2.3, 6.9), t: V(13.0, 0.4, 2.3), f: 40 }; },
+    section() {
+      const k = Math.min(1.9, Math.max(1, 1.2 / aspect()));
+      return { p: V(-6.5 * k, 2.4, 1.6), t: V(2, 0.6, 1.6), f: 45 };
+    },
+  };
+  let tween = null, currentView = "overview";
+  const viewBtns = [...document.querySelectorAll("#views button")];
+  const viewLabel = document.getElementById("viewname");
+  function setActive(name) {
+    currentView = name;
+    viewBtns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === name)));
+    viewLabel.textContent = name ? viewNames[name] : "Free view";
+  }
+  function goView(name, instant) {
+    if (state.walking) stopWalk(true);
+    const v = views[name]();
+    tween = { fp: camera.position.clone(), ft: controls.target.clone(), ff: camera.fov, to: v, s: 0, dur: instant || reduced ? 0 : 1.15 };
+    setActive(name);
+  }
+  viewBtns.forEach((b) => b.addEventListener("click", () => goView(b.dataset.view)));
+  controls.addEventListener("start", () => { tween = null; if (currentView) setActive(null); });
+
+  // ---------- Walk-through ----------
+  const walk = { t: 0, playing: false, dur: 27, x0: -9, x1: 23, fp: null, ft: null, ff: 42 };
+  const walkbar = document.getElementById("walkbar"), walkCap = document.getElementById("walkCap");
+  const walkPlay = document.getElementById("walkPlay"), walkRange = document.getElementById("walkRange"), walkPos = document.getElementById("walkPos");
+  const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const walkZ = (x) => 1.4 + 0.75 * (sstep(-3.2, -0.5, x) - sstep(14.6, 17.2, x));
+  const captions = [
+    [-99, "Approaching the works. The pedestrian sign warns the footpath is narrowed."],
+    [-3.2, "The fence tapers back to the wall. Move across to the road side of the footpath."],
+    [0, "Designated pedestrian area: the outer 1.0 m of footpath plus 0.5 m of ground matting."],
+    [5.5, "The work zone is fenced 1.4 m out from the retaining wall."],
+    [11.8, "Passing the utility pole. The full 1.5 m width stays clear."],
+    [14.6, "Past the works. The fence tapers back and the footpath returns to its full 2.0 m."],
+  ];
+  function walkPose(t, time) {
+    const x = walk.x0 + (walk.x1 - walk.x0) * t;
+    const bob = reduced ? 0 : Math.sin(time * 9.5) * 0.012;
+    camera.position.set(x, S.pathY + 1.6 + bob, walkZ(x));
+    const lx = x + 3.5;
+    controls.target.set(lx, S.pathY + 1.32, walkZ(lx));
+    camera.lookAt(controls.target);
+    let cap = captions[0][1];
+    for (const [cx, txt] of captions) if (x >= cx) cap = txt;
+    if (walkCap.textContent !== cap) walkCap.textContent = cap;
+    walkPos.textContent = (x - S.front[0]).toFixed(1) + " m";
+    walkRange.value = String(Math.round(t * 1000));
+  }
+  function startWalk() {
+    tween = null;
+    state.walking = true; applyVisibility();
+    controls.enabled = false;
+    walk.fp = camera.position.clone(); walk.ft = controls.target.clone(); walk.ff = camera.fov;
+    camera.fov = 62; camera.updateProjectionMatrix();
+    walk.t = 0; walk.playing = true; walkPlay.textContent = "Pause";
+    walkbar.hidden = false; setActive(null); viewLabel.textContent = "Walk-through";
+    walkPose(0, 0);
+  }
+  function stopWalk(silent) {
+    state.walking = false; walk.playing = false; applyVisibility();
+    controls.enabled = true; walkbar.hidden = true;
+    camera.fov = 42; camera.updateProjectionMatrix();
+    if (!silent) goView("overview");
+  }
+  document.getElementById("walkStart").addEventListener("click", startWalk);
+  document.getElementById("walkExit").addEventListener("click", () => stopWalk(false));
+  walkPlay.addEventListener("click", () => {
+    if (walk.t >= 1) walk.t = 0;
+    walk.playing = !walk.playing;
+    walkPlay.textContent = walk.playing ? "Pause" : "Play";
+  });
+  walkRange.addEventListener("input", () => { walk.t = Number(walkRange.value) / 1000; walkPose(walk.t, clock.elapsedTime); });
+
+  // ---------- Hint text for touch ----------
+  if (window.matchMedia("(pointer: coarse)").matches) document.getElementById("hint").textContent = "Drag to orbit · Pinch to zoom";
+
+  // ---------- Resize ----------
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(() => { resize(); if (currentView && !state.walking && !tween) goView(currentView, true); }).observe(stage);
+  resize();
+
+  // ---------- Label projection ----------
+  const tmp = new THREE.Vector3();
+  function updateLabels() {
+    const w = stage.clientWidth, h = stage.clientHeight, placed = [];
+    for (const L of labels) {
+      let show = !state.walking && (L.kind === "dim" ? state.dims : state.callouts) && (L.layer !== "temp" || state.temp);
+      let x = 0, y = 0;
+      if (show) {
+        if (camera.position.distanceTo(L.p) > L.maxD) show = false;
+        else {
+          tmp.copy(L.p).project(camera);
+          if (tmp.z > 1 || tmp.z < -1 || Math.abs(tmp.x) > 1.2 || Math.abs(tmp.y) > 1.2) show = false;
+          else { x = (tmp.x + 1) / 2 * w; y = (1 - tmp.y) / 2 * h; }
+        }
+      }
+      if (show) {
+        if (!L.w) { if (L.el.hidden) L.el.hidden = false; L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; }
+        // keep the box that matters: the tag for callouts, the whole pill for dimensions
+        const r = L.kind === "dim"
+          ? [x - L.w / 2, y - L.h / 2, x + L.w / 2, y + L.h / 2]
+          : [x - L.w / 2, y - L.h, x + L.w / 2, y - L.h + 24];
+        for (const q of placed) { if (r[0] < q[2] + 3 && r[2] > q[0] - 3 && r[1] < q[3] + 2 && r[3] > q[1] - 2) { show = false; break; } }
+        if (show) {
+          placed.push(r);
+          L.el.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px) translate(-50%," + (L.kind === "dim" ? "-50%" : "-100%") + ")";
+        }
+      }
+      if (show !== L.shown || L.el.hidden === show) { L.el.hidden = !show; L.shown = show; }
+    }
+  }
+
+  // ---------- Loop ----------
+  const clock = new THREE.Clock();
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  function frame() {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    if (state.walking) {
+      if (walk.playing) {
+        walk.t = Math.min(1, walk.t + dt / walk.dur);
+        if (walk.t >= 1) { walk.playing = false; walkPlay.textContent = "Replay"; }
+      }
+      walkPose(walk.t, clock.elapsedTime);
+    } else {
+      if (tween) {
+        tween.s = tween.dur ? tween.s + dt / tween.dur : 1;
+        const k = ease(Math.min(1, tween.s));
+        camera.position.lerpVectors(tween.fp, tween.to.p, k);
+        controls.target.lerpVectors(tween.ft, tween.to.t, k);
+        camera.fov = tween.ff + (tween.to.f - tween.ff) * k;
+        camera.updateProjectionMatrix();
+        if (tween.s >= 1) tween = null;
+      }
+      controls.update();
+    }
+    renderer.render(scene, camera);
+    updateLabels();
+    requestAnimationFrame(frame);
+  }
+
+  applyVisibility();
+  const h0 = (location.hash || "").slice(1);
+  goView(views[h0] ? h0 : "overview", true);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
