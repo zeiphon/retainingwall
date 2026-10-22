@@ -258,7 +258,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
     </section>
 
     <div class="foot">
-      <span>Built from the 14 m frontage site plan and a site photo. Layout dimensions follow the plan; existing features (fences, pit, trees) are approximate.</span>
+      <span>Built from the 14 m frontage site plan and a site photo. Layout dimensions follow the plan; existing features (fences, pit, trees) are approximate. Neighbouring walls are shown for a short stretch each side.</span>
       <span>Drag to orbit · scroll or pinch to zoom · right-drag or two-finger drag to pan.</span>
     </div>
   </aside>
@@ -397,20 +397,27 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
     g.fillStyle = "#56595c"; g.fillRect(0, 0, w, h);
     speckle(g, w, h, r, 5200, ["#4b4e51", "#64676a", "#6f7174", "#45484b"], 1, 2);
   });
-  const texBrick = makeTex(480, 344, (g, w, h) => {
-    const r = rng(3);
-    g.fillStyle = "#b8aa96"; g.fillRect(0, 0, w, h);
-    const bw = 230, bh = 76, m = 10, cols = ["#a4472e", "#93402a", "#b0553a", "#8a3a26", "#a84f35", "#9b4630"];
-    for (let row = 0; row < 4; row++) {
-      const y = row * (bh + m) + m / 2, off = row % 2 ? -(bw + m) / 2 : 0;
-      for (let x = off; x < w; x += bw + m) {
-        g.fillStyle = cols[Math.floor(r() * cols.length)];
-        g.fillRect(x + m / 2, y, bw, bh);
-        if (x + bw + m > w) { g.fillRect(x + m / 2 - w, y, bw, bh); }
+  function brickTexture(seed, mortar, cols, grime) {
+    return makeTex(480, 344, (g, w, h) => {
+      const r = rng(seed);
+      g.fillStyle = mortar; g.fillRect(0, 0, w, h);
+      const bw = 230, bh = 76, m = 10;
+      for (let row = 0; row < 4; row++) {
+        const y = row * (bh + m) + m / 2, off = row % 2 ? -(bw + m) / 2 : 0;
+        for (let x = off; x < w; x += bw + m) {
+          g.fillStyle = cols[Math.floor(r() * cols.length)];
+          g.fillRect(x + m / 2, y, bw, bh);
+          if (x + bw + m > w) { g.fillRect(x + m / 2 - w, y, bw, bh); }
+        }
       }
-    }
-    speckle(g, w, h, r, 3000, ["rgba(60,25,15,0.25)", "rgba(255,210,180,0.15)"], 1, 3);
-  });
+      speckle(g, w, h, r, grime || 3000, ["rgba(60,25,15,0.25)", "rgba(255,210,180,0.15)"], 1, 3);
+    });
+  }
+  const texBrick = brickTexture(3, "#b8aa96", ["#a4472e", "#93402a", "#b0553a", "#8a3a26", "#a84f35", "#9b4630"]);
+  // neighbour at the pole end: older, darker mixed brick (photo 1)
+  const texBrickOld = brickTexture(13, "#9a948a", ["#7a3b2e", "#6a3a33", "#8b4a3a", "#5e3a35", "#7f5148", "#94604f"], 5000);
+  // neighbour at the other end: pale, weathered brick (street view photo)
+  const texBrickPale = brickTexture(17, "#c9c1b3", ["#c9a58e", "#d4b4a0", "#bf9a84", "#cfae9c", "#b89580", "#d9c0ad"], 4200);
   const texCap = makeTex(344, 110, (g, w, h) => {
     const r = rng(9);
     g.fillStyle = "#b8aa96"; g.fillRect(0, 0, w, h);
@@ -422,6 +429,19 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
     const grd = g.createLinearGradient(0, 0, w, 0);
     [["#5b745d", 0], ["#6f8a70", 0.18], ["#506751", 0.32], ["#5d765f", 0.5], ["#6f8a70", 0.68], ["#506751", 0.82], ["#5b745d", 1]].forEach(([c, s]) => grd.addColorStop(s, c));
     g.fillStyle = grd; g.fillRect(0, 0, w, 32);
+  });
+  const texRibRed = makeTex(152, 32, (g, w) => {
+    const grd = g.createLinearGradient(0, 0, w, 0);
+    [["#a14a3c", 0], ["#b65d4c", 0.18], ["#8f4034", 0.32], ["#a34c3e", 0.5], ["#b65d4c", 0.68], ["#8f4034", 0.82], ["#a14a3c", 1]].forEach(([c, s]) => grd.addColorStop(s, c));
+    g.fillStyle = grd; g.fillRect(0, 0, w, 32);
+  });
+  const texLattice = makeTex(128, 128, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    g.strokeStyle = "#a14a3c"; g.lineWidth = 9;
+    for (let i = -2; i <= 2; i++) {
+      g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64 + 128, 128); g.stroke();
+      g.beginPath(); g.moveTo(i * 64 + 128, 0); g.lineTo(i * 64, 128); g.stroke();
+    }
   });
   const texMesh = makeTex(256, 256, (g, w, h) => { // temporary fence mesh, ~60 x 150 mm
     g.clearRect(0, 0, w, h);
@@ -521,7 +541,27 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
   const [E0, E1] = S.ext, EW = E1 - E0, EC = (E0 + E1) / 2;
 
   // ---------- Ground layers ----------
-  site.add(ground(E0, E1, -45, -S.wallT, S.propY, M.grass(EW / 3, 15)));          // raised property ground
+  // Lots behind the walls: the site plus a short stretch of each neighbour. Beyond that the model is flat.
+  const NB = { L: { x0: -4.36, x1: 0, y: 0.5, face: 0 }, R: { x0: 14, x1: 19, y: 0.4, face: -0.1 } };
+  const LOT_BACK = -14;
+  const soil = std({ color: 0x9c8466 });
+  site.add(ground(E0, E1, -45, 0, 0.005, M.grass(EW / 3, 15)));
+  function lot(x0, x1, y, front) {
+    const d = front - LOT_BACK, top = std({ map: rep(texGrass, (x1 - x0) / 2, d / 2) });
+    const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y, d), [soil, soil, top, soil, soil, soil]);
+    m.position.set((x0 + x1) / 2, y / 2, front - d / 2); m.receiveShadow = true;
+    site.add(m);
+  }
+  function lotY(x, z) {
+    if (z > -S.wallT || z < LOT_BACK) return 0.005;
+    if (x >= S.front[0] && x <= S.front[1]) return S.propY;
+    if (x >= NB.L.x0 && x < NB.L.x1) return NB.L.y;
+    if (x > NB.R.x0 && x <= NB.R.x1) return NB.R.y;
+    return 0.005;
+  }
+  lot(S.front[0], S.front[1], S.propY, -S.wallT);
+  lot(NB.L.x0, NB.L.x1, NB.L.y, NB.L.face - S.wallT);
+  lot(NB.R.x0, NB.R.x1, NB.R.y, NB.R.face - S.wallT);
   site.add(ground(E0, E1, S.strip[0], S.strip[1], S.groundY, M.grass(EW / 2, 0.2))); // strip between wall and path
   site.add(ground(E0, E1, S.verge[0], S.verge[1], S.groundY, M.grass(EW / 2, 0.6)));
   site.add(ground(E0 - 40, E1 + 40, S.road[0] + 0.12, S.road[1], S.roadY, M.asphalt(EW / 2 + 40, 6)));
@@ -538,49 +578,82 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
     }
   }
 
-  // ---------- Retaining wall (frontage full colour, neighbours toned down) ----------
-  function wall(x0, x1, tone) {
-    const L = x1 - x0, bodyH = S.wallH - S.capH;
-    const body = box(L, bodyH, S.wallT, std({ map: rep(texBrick, L / 0.48, bodyH / 0.344), color: tone }), (x0 + x1) / 2, bodyH / 2, -S.wallT / 2);
-    const cap = box(L, S.capH, S.wallT + 0.04, std({ map: rep(texCap, L / 0.344, 1), color: tone }), (x0 + x1) / 2, bodyH + S.capH / 2, -S.wallT / 2);
-    site.add(body, cap);
+  // ---------- Retaining wall (stops at both boundaries) and neighbouring walls ----------
+  function brickBox(x0, x1, y0, h, face, depth, tex, opts) {
+    const L = x1 - x0;
+    return box(L, h, depth, std({ map: rep(tex, L / 0.48, h / 0.344) }), (x0 + x1) / 2, y0 + h / 2, face - depth / 2, opts);
   }
-  wall(S.front[0], S.front[1], 0xffffff);
-  wall(E0, S.front[0], 0xc4bbb2);
-  wall(S.front[1], E1, 0xc4bbb2);
-  for (const bx of S.front) site.add(box(0.025, S.wallH + 0.02, 0.02, std({ color: 0x1b2228 }), bx, S.wallH / 2, 0.012, { cast: false }));
+  (function siteWall() {
+    const bodyH = S.wallH - S.capH, [x0, x1] = S.front, L = x1 - x0;
+    site.add(brickBox(x0, x1, 0, bodyH, 0, S.wallT, texBrick));
+    site.add(box(L, S.capH, S.wallT + 0.04, std({ map: rep(texCap, L / 0.344, 1) }), (x0 + x1) / 2, bodyH + S.capH / 2, -S.wallT / 2));
+    // end pier at the left boundary (street view) and timber post at the right boundary (photo 1)
+    site.add(brickBox(x0, x0 + 0.35, 0, S.wallH, 0.04, 0.36, texBrick));
+    site.add(box(0.39, 0.09, 0.4, std({ map: rep(texCap, 0.39 / 0.344, 1) }), x0 + 0.175, S.wallH + 0.045, 0.04 - 0.18));
+    site.add(box(0.1, 1.35, 0.1, std({ color: 0x4a3f34, roughness: 1 }), x1 + 0.06, 0.675, -0.06));
+  })();
+  (function leftNeighbour() {
+    const n = NB.L, h = 0.55, capH = 0.05, wx0 = -4;
+    site.add(brickBox(wx0, n.x1, 0, h - capH, n.face, S.wallT, texBrickPale));
+    site.add(box(n.x1 - wx0, capH, S.wallT + 0.03, std({ color: 0xb9b2a5 }), (wx0 + n.x1) / 2, h - capH / 2, n.face - S.wallT / 2));
+    site.add(brickBox(wx0 - 0.36, wx0, 0, 0.66, n.face + 0.04, 0.36, texBrickPale));
+    site.add(box(0.42, 0.06, 0.42, std({ color: 0xb9b2a5 }), wx0 - 0.18, 0.69, n.face + 0.04 - 0.18));
+  })();
+  (function rightNeighbour() {
+    const n = NB.R, h = 0.45, capH = 0.05;
+    site.add(brickBox(n.x0, n.x1, 0, h - capH, n.face, S.wallT, texBrickOld));
+    site.add(box(n.x1 - n.x0, capH, S.wallT + 0.03, std({ color: 0x9c978e }), (n.x0 + n.x1) / 2, h - capH / 2, n.face - S.wallT / 2));
+  })();
 
-  // ---------- Existing property fences (from photo) ----------
-  function sheetFence(x0, x1) {
-    const L = x1 - x0, z = -0.5, y0 = S.propY, h = 1.8;
-    site.add(box(L, h, 0.03, std({ map: rep(texRib, L / 0.152, 1), roughness: 0.55, metalness: 0.25 }), (x0 + x1) / 2, y0 + h / 2, z));
-    site.add(box(L, 0.07, 0.06, M.maroon, (x0 + x1) / 2, y0 + h + 0.02, z));
-    const n = Math.floor(L / 2.4);
-    const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, h + 0.05, 0.06), M.maroon, n + 1);
-    posts.castShadow = true;
-    const mtx = new THREE.Matrix4();
-    for (let i = 0; i <= n; i++) { mtx.makeTranslation(x0 + i * (L / n), y0 + (h + 0.05) / 2, z + 0.04); posts.setMatrixAt(i, mtx); }
-    site.add(posts);
+  // ---------- Existing property fences (from photos) ----------
+  function sheetFence(ax, az, bx, bz, y0, h, tex, postMat) {
+    const L = Math.hypot(bx - ax, bz - az), g = new THREE.Group();
+    g.position.set((ax + bx) / 2, y0, (az + bz) / 2);
+    g.rotation.y = Math.atan2(-(bz - az), bx - ax);
+    const sheet = box(L, h, 0.03, std({ map: rep(tex, L / 0.152, 1), roughness: 0.55, metalness: 0.25 }), 0, h / 2, 0);
+    g.add(sheet, box(L, 0.07, 0.06, postMat, 0, h + 0.02, 0));
+    const n = Math.max(1, Math.round(L / 2.4));
+    for (let i = 0; i <= n; i++) g.add(box(0.06, h + 0.05, 0.06, postMat, -L / 2 + i * (L / n), (h + 0.05) / 2, 0.04));
+    site.add(g);
+    return g;
   }
-  sheetFence(E0, 11);
-  sheetFence(18, E1);
-  (function chainLink(x0, x1) {
-    const L = x1 - x0, z = -0.18, y0 = S.propY, h = 1.2;
+  const tealFence = (ax, az, bx, bz) => sheetFence(ax, az, bx, bz, S.propY, 1.8, texRib, M.maroon);
+  tealFence(S.front[0], -0.5, S.front[1], -0.5);                   // site front fence
+  tealFence(S.front[0], -0.5, S.front[0], LOT_BACK + 0.5);         // side boundary fences
+  tealFence(S.front[1], -0.5, S.front[1], LOT_BACK + 0.5);
+  (function leftNeighbourFence() {
+    const n = NB.L, z = -2.7, h = 1.25, lh = 0.5, red = std({ color: 0x8f4034, roughness: 0.6, metalness: 0.2 });
+    const g = sheetFence(n.x0, z, n.x1, z, n.y, h, texRibRed, red);
+    const L = n.x1 - n.x0;
+    const lat = new THREE.Mesh(new THREE.PlaneGeometry(L, lh), std({ map: rep(texLattice, L / 0.3, lh / 0.3), transparent: true, alphaTest: 0.2, side: THREE.DoubleSide }));
+    lat.position.y = h + lh / 2 + 0.05; g.add(lat);
+    g.add(box(L, 0.05, 0.05, red, 0, h + lh + 0.06, 0));
+    for (let i = 0; i <= 2; i++) g.add(box(0.06, lh + 0.1, 0.06, red, -L / 2 + i * (L / 2), h + lh / 2 + 0.05, 0.04));
+    // bougainvillea at the end of the stretch
+    const pink = std({ color: 0xc0477f, roughness: 1, flatShading: true }), r = rng(41);
+    for (let i = 0; i < 9; i++) {
+      const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.35 + r() * 0.35, 0), i % 3 ? M.leaf : pink);
+      b.position.set(n.x0 + 0.3 + r() * 0.9, n.y + 0.3 + r() * 1.4, -0.7 - r() * 1.8); b.castShadow = true; site.add(b);
+    }
+  })();
+  (function chainLink() {
+    const n = NB.R, x0 = n.x0 + 0.12, x1 = n.x1, L = x1 - x0, z = n.face - S.wallT - 0.06, y0 = n.y, h = 1.0;
     const mat = std({ map: rep(texChain, L / 0.1, h / 0.1), transparent: true, alphaTest: 0.05, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.6, depthWrite: false });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(L, h), mat);
     mesh.position.set((x0 + x1) / 2, y0 + h / 2, z); site.add(mesh);
     site.add(cylBetween(V(x0, y0 + h, z), V(x1, y0 + h, z), 0.022, M.cream));
-    for (let x = x0; x <= x1 + 0.01; x += L / 3) site.add(cylBetween(V(x, y0, z), V(x, y0 + h + 0.05, z), 0.03, M.cream));
-    // cream steel gate frame with scroll-top rail, as in the photo
-    const gx = 15.4;
-    site.add(cylBetween(V(gx, y0, z + 0.02), V(gx, y0 + 1.15, z + 0.02), 0.025, M.cream));
-    site.add(cylBetween(V(gx + 0.9, y0, z + 0.02), V(gx + 0.9, y0 + 1.15, z + 0.02), 0.025, M.cream));
-    site.add(cylBetween(V(gx, y0 + 0.9, z + 0.02), V(gx + 0.9, y0 + 0.9, z + 0.02), 0.02, M.cream));
+    for (let i = 0; i <= 2; i++) { const x = x0 + (i * L) / 2; site.add(cylBetween(V(x, y0, z), V(x, y0 + h + 0.05, z), 0.03, M.cream)); }
+    // cream steel gate with scroll-top rail, as in the photo
+    const gx = 15.2, gz = z + 0.03, gh = 1.1;
+    site.add(cylBetween(V(gx, y0, gz), V(gx, y0 + gh, gz), 0.025, M.cream));
+    site.add(cylBetween(V(gx + 0.9, y0, gz), V(gx + 0.9, y0 + gh, gz), 0.025, M.cream));
+    site.add(cylBetween(V(gx, y0 + 0.82, gz), V(gx + 0.9, y0 + 0.82, gz), 0.02, M.cream));
+    site.add(cylBetween(V(gx, y0 + gh, gz), V(gx + 0.9, y0 + gh, gz), 0.02, M.cream));
     for (let i = 0; i < 5; i++) {
       const t = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.012, 6, 16), M.cream);
-      t.position.set(gx + 0.13 + i * 0.16, y0 + 1.0, z + 0.02); site.add(t);
+      t.position.set(gx + 0.13 + i * 0.16, y0 + 0.96, gz); site.add(t);
     }
-  })(11, 18);
+  })();
 
   // trees for context
   function tree(x, z, s, mat) {
@@ -593,10 +666,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
       c.position.set((r() - 0.5) * 2.6 * s, (3.6 + r() * 1.6) * s, (r() - 0.5) * 2.2 * s);
       c.castShadow = true; g.add(c);
     }
-    g.position.set(x, z < 0 ? S.propY : 0, z);
+    g.position.set(x, lotY(x, z), z);
     site.add(g);
   }
-  tree(2.5, -4.5, 1.0); tree(19, -6, 1.15); tree(-9, -5, 0.9); tree(6, 24, 1.8); tree(-16, 30, 1.5); tree(28, 26, 1.6);
+  tree(2.5, -4.5, 1.0); tree(17.5, -6, 1.15); tree(-9, -5, 0.9); tree(6, 24, 1.8); tree(-16, 30, 1.5); tree(28, 26, 1.6);
 
   // service pit lid on the footpath (photo)
   const pit = box(0.5, 0.012, 0.42, std({ map: texPit, roughness: 0.5, metalness: 0.4 }), 12.4, S.pathY + 0.006, 0.66, { cast: false });
@@ -833,9 +906,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
 
   // ---------- Callouts ----------
   addLabel("callout", "site", V(6.2, S.wallH + 0.02, -0.08), "Retaining wall to be replaced", "", 60, 10);
-  addLabel("callout", "site", V(0, S.wallH + 0.05, -0.1), "Boundary", "", 22, 70);
-  addLabel("callout", "site", V(14, S.wallH + 0.05, -0.1), "Boundary", "", 22, 70);
+  addLabel("callout", "site", V(0, S.wallH + 0.1, -0.12), "Boundary", "", 22, 70);
+  addLabel("callout", "site", V(14, 1.36, -0.06), "Boundary", "", 22, 70);
   addLabel("callout", "site", V(P.x, 2.9, P.z), "Utility pole", "", 60, 30);
+  addLabel("callout", "site", V(-2.2, 0.57, -0.08), "Neighbour's lower wall", "", 30, 65);
+  addLabel("callout", "site", V(17.4, 0.47, -0.18), "Neighbour's lower wall", "", 30, 65);
   addLabel("callout", "site", V(12.4, S.pathY + 0.02, 0.66), "Existing service pit", "", 18, 72);
   addLabel("callout", "site", V(7, S.roadY, 8.6), "Guildford Rd", "road", 60, 40);
   addLabel("callout", "temp", V(9.2, 1.82, S.fenceZ), "1.8 m mesh fence panels", "work", 60, 12);
