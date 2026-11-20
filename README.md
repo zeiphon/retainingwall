@@ -1,4 +1,4 @@
-# Guildford Rd retaining wall replacement – 3D site model
+# retaining wall replacement – 3D site model
 
 Interactive WebGL (Three.js) model of the 14 m frontage, showing the 1.4 m fenced work zone, the 1.5 m designated pedestrian area (1.0 m footpath + 0.5 m ground matting), pedestrian signs and utility pole clearance.
 
